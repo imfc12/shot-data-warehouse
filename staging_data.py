@@ -8,12 +8,12 @@ from tqdm import tqdm
 import time
 
 
-class StageTeamShotData(ClutchTime, Month):
+class StageTeamShotData(ClutchTime, Month, DatabaseControl):
 # Holds map of team name -> team abbreviation
     team_names_map = {'Atlanta Hawks':'ATL', 'Boston Celtics':'BOS', 'Brooklyn Nets':'BKN', 'Charlotte Hornets':'CHA',
                       'Chicago Bulls':'CHI', 'Cleveland Cavaliers':'CLE', 'Dallas Mavericks':'DAL', 'Denver Nuggets':'DEN',
                       'Detroit Pistons':'DET', 'Golden State Warriors':'GSW', 'Houston Rockets':'HOU', 'Indiana Pacers':'IND',
-                      'Los Angeles Clippers':'LAC', 'Los Angeles Lakers':'LAL', 'Memphis Grizzlies':'MEM', 'Miami Heat':'MIA',
+                      'LA Clippers':'LAC', 'Los Angeles Lakers':'LAL', 'Memphis Grizzlies':'MEM', 'Miami Heat':'MIA',
                       'Milwaukee Bucks':'MIL', 'Minnesota Timberwolves':'MIN', 'New Orleans Pelicans':'NOP', 'New York Knicks':'NYK',
                       'Oklahoma City Thunder':'OKC', 'Orlando Magic':'ORL', 'Philadelphia 76ers':'PHI', 'Phoenix Suns':'PHX',
                       'Portland Trail Blazers':'POR', 'Sacramento Kings':'SAC', 'San Antonio Spurs':'SAS', 'Toronto Raptors':'TOR',
@@ -151,12 +151,14 @@ class StageTeamShotData(ClutchTime, Month):
     # Returns dict with team_id, list of player id's, list of player name
     # Can use this function externally for debugging etc.
     def get_team(self) -> dict[str, Union[int, list]]:
+        # Dictionary cursor to return table in dictionary format (team_abbrev, player_id, team_id, player_name), for stored procedure 'TeamPlayers' in get_team()
+        cursor_dict = self.__class__.connection.cursor(dictionary=True)
         # Call stored procedure to receive all players in the given team
-        DatabaseControl.cursor_dict.callproc(procname='TeamPlayers', args=[self.team])
+        cursor_dict.callproc(procname='TeamPlayers', args=[self.team])
         # Empty dict to include team's id, list of each player's id and list of each player's name (debugging)
         team = {}
-        # Retrieve stored procesdure results and loop over each row (player)
-        for result in DatabaseControl.cursor_dict.stored_results():
+        # Retrieve stored procedure results and loop over each row (player)
+        for result in cursor_dict.stored_results():
             players = result.fetchall()
             for num, player in enumerate(players, start=1):
                 # Retrieve the team's id once only, by any player (Whoever is first)
@@ -170,6 +172,7 @@ class StageTeamShotData(ClutchTime, Month):
                 team['player_names'].append(player['player_name'])
                 # TEST debug
                 # print(f'Team: {player['team_abbrev']} - P_ID: {player['player_id']} - T_ID: {player['team_id']} - Name: {player['player_name']}')
+        cursor_dict.close()
         return team
 
     # Returns list of dictionaries where values are strings or integers
@@ -186,11 +189,12 @@ class StageTeamShotData(ClutchTime, Month):
             # Add the shots to the current team's shots
             team_shots.extend(shots)
             # Avoid overloading the API
-            time.sleep(1)
+            time.sleep(2)
 
         return team_shots
 
     def stage_shots(self) -> NoReturn:
+        cursor = self.__class__.connection.cursor()
         if self.team is None or self.season_segment is None:
             return f'Invalid values in team:({self.team}) or season_segment({self.season_segment})'
         current_team_shots = self.team_shots()
@@ -203,24 +207,29 @@ class StageTeamShotData(ClutchTime, Month):
                                     %(game_date)s, %(htm)s, %(vtm)s, %(matchup)s, %(season_segment)s)
                                     """
         print('Inserting player shots...')
-        DatabaseControl.cursor.executemany(insert_player_shots_query, current_team_shots)
-        # Insert into ref_teams.last_updated with '' timestamp
-
+        cursor.executemany(insert_player_shots_query, current_team_shots)
+        self.__class__.connection.commit()
+        # Insert into ref_teams.last_updated with timestamp
+        # Get current time to insert into ref_teams.team to show latest update
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         update_timestamp_query = "UPDATE ref_teams SET last_updated = %s WHERE team_abbrev = %s"
-        DatabaseControl.cursor.execute(update_timestamp_query, (timestamp, self.team))
+        cursor.execute(update_timestamp_query, (timestamp, self.team))
 
-        
-        # DatabaseControl.connection.commit()
+        self.__class__.connection.commit()
+        cursor.close()
+
+    
     # No tuple return value, just printing
     def testing(self) -> tuple:
+        cursor = self.__class__.connection.cursor()
         # Test
         # Need to remove the close connection from 'stage_shots()' to run this, so it keeps the same connection, unless we are committing as well
-        DatabaseControl.cursor.execute("SELECT * FROM stg_shots")
-        players = DatabaseControl.cursor.fetchall()
+        cursor.execute("SELECT * FROM stg_shots")
+        players = cursor.fetchall()
         for player in players:
             print(player)
 
+        cursor.close()
 
 # Function to run the StageTeamShotData instance
 def stg_data(stack: int, database_on: bool = False) -> NoReturn:

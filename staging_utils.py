@@ -39,10 +39,8 @@ class DatabaseControl:
     cursor = connection.cursor()
     # Set default database
     cursor.execute('USE shot_eff_whse')
-    # Dictionary cursor to return table in dictionary format (team_abbrev, player_id, team_id, player_name), for stored procedure 'TeamPlayers' in get_team()
-    cursor_dict = connection.cursor(dictionary=True)
-
+    cursor.close()
     # Option to set new database name
     @classmethod
     def set_database(cls, db_name):
-        cls.cursor.execute('USE %s', db_name)
+        cls.cursor.execute(f'USE {db_name}')
