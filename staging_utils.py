@@ -30,6 +30,7 @@ class ClutchTime:
     none_clutch = ""
 
 class DatabaseControl:
+    print('Starting up database')
     pw = os.getenv('mysql_pw')
     # Connect to db
     connection = connector.connect(host='localhost', user='root',

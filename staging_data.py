@@ -180,7 +180,7 @@ class StageTeamShotData(ClutchTime, Month):
         # Will hold all player shots of team, one dict for each shot
         team_shots = []
         # Loop over the players (id's) of the team
-        for pid in tqdm(team_details['player_ids'], desc='Loading Players..'):
+        for pid in tqdm(team_details['player_ids'], desc=f'Loading: {self.team} -> {self.season_segment}'):
             # Contains all shots of a given player
             shots = self.player_shots(p_id=pid, t_id=team_details['team_id'])
             # Add the shots to the current team's shots
@@ -202,7 +202,7 @@ class StageTeamShotData(ClutchTime, Month):
                                     %(event_type)s, %(action_type)s, %(shot_type)s, %(shot_zone_basic)s, %(shot_zone_area)s, %(shot_zone_range)s, %(shot_distance)s, %(loc_x)s, %(loc_y)s, %(shot_made_flag)s, 
                                     %(game_date)s, %(htm)s, %(vtm)s, %(matchup)s, %(season_segment)s)
                                     """
-        print('Inserting players...')
+        print('Inserting player shots...')
         DatabaseControl.cursor.executemany(insert_player_shots_query, current_team_shots)
         # Insert into ref_teams.last_updated with '' timestamp
 
@@ -212,10 +212,8 @@ class StageTeamShotData(ClutchTime, Month):
 
         
         # DatabaseControl.connection.commit()
-        DatabaseControl.connection.close()
-
-
-    def testing(self):
+    # No tuple return value, just printing
+    def testing(self) -> tuple:
         # Test
         # Need to remove the close connection from 'stage_shots()' to run this, so it keeps the same connection, unless we are committing as well
         DatabaseControl.cursor.execute("SELECT * FROM stg_shots")
@@ -223,6 +221,31 @@ class StageTeamShotData(ClutchTime, Month):
         for player in players:
             print(player)
 
+
+# Function to run the StageTeamShotData instance
+def stg_data(stack: int, database_on: bool = False) -> NoReturn:
+    team_stack = {1: ['ATL', 'BOS', 'BKN'], 2: ['CHA', 'CHI', 'CLE'], 3: ['DAL', 'DEN', 'DET'],
+                4: ['GSW', 'HOU', 'IND'], 5: ['LAC', 'LAL', 'MEM'], 6: ['MIA', 'MIL', 'MIN'],
+                7: ['NOP', 'NYK', 'OKC'], 8: ['ORL', 'PHI', 'PHX'], 9: ['POR', 'SAC', 'SAS'],
+                10: ['TOR', 'UTA', 'WAS']}
+    # Create instance for each team
+    team_instance = StageTeamShotData()
+    # Loop over the list of teams determined by stack argument
+    for team in team_stack[stack]:
+        # Loop over Regular Season and Playoffs
+        for season in StageTeamShotData.allowed_season_segments:
+            # Set current team and season for instance
+            team_instance.team = team
+            team_instance.season_segment = season
+            team_instance.clutch_time_setting = ''
+            team_instance.month_setting = 'all months'
+            team_instance.stage_shots()
+            # Perform a check to see if we are at the end of the player/season iteration, if so, execute testing query.
+            # if team_stack[stack].index(team) == 2 and StageTeamShotData.allowed_season_segments.index(season) == 1:
+            #     team_instance.testing()
+    
+    # If we are running more than one stack at a time via a loop, we want to keep the database on
+    if not database_on:
         DatabaseControl.connection.close()
 
 
