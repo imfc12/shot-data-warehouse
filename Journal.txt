@@ -9,12 +9,11 @@
         - Changed how each instance method creates connections and cursors (context manager)
 	* Added global function staging_data.get_updates() to retrieve latest updates from teams.
     * Added .gitignore file
-    * Updated stg_shots with: CHA, CHI, CLE, LAC, LAL, MEM, MIA, MIL, MIN, TOR, UTA, WAS
-        - 83,653 rows (shots)
-
-
+    * Updated all shots in stg_shots with:
+        - Stacks: 1,2,3,4,5,6,7,8,9,10
+    * Created global function staging_data.stg_one to run one team/segment at a time
 
 
 TO DO:
-* Insert rest of teams into database
+* Run process of stg_shots -> facts/dimensions tables
 

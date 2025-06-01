@@ -22,20 +22,16 @@ Loads 3 teams at a time with stg_data() function call. Can put in a for loop wit
 add time.sleep(10) to avoid overloading API
 
 Team Stacks:
-(1: ATL, BOS, BKN)   (2: CHA, CHI, CLE)1/6   (3: DAL, DEN, DET)   (4: GSW, HOU, IND)   (5: LAC, LAL, MEM)31/5 
-(6: MIA, MIL, MIN)1/6   (7: NOP, NYK, OKC)   (8: ORL, PHI, PHX)   (9: POR, SAC, SAS)   (10: TOR, UTA, WAS)1/6
+(1: ATL, BOS, BKN)1/6   (2: CHA, CHI, CLE)1/6   (3: DAL, DEN, DET)1/6   (4: GSW, HOU, IND)1/6   (5: LAC, LAL, MEM)31/5 
+(6: MIA, MIL, MIN)1/6   (7: NOP, NYK, OKC)1/6   (8: ORL, PHI, PHX)   (9: POR, SAC, SAS)1/6   (10: TOR, UTA, WAS)1/6
 '''
-# NOT WORKING PROPERLY
-# Option 1: Continuous
-# for n in range(1, 11):
-#     staging_data.stg_data(stack=n, database_on=True)
-#     time.sleep(10)
-# # Close the connection
-# DatabaseControl.connection.close()
 
-# Option 2: Individual call (3 at a time)
-staging_data.stg_data(10)
+# Call one stack at a time (3 teams in one stack)
+staging_data.stg_data(8)
 
 # Get last update for teams
 staging_data.get_updates()
 
+# One team / season at a time
+# staging_data.stg_one('IND', 'Playoffs')
+# Need Indiana Playoffs

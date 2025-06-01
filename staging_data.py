@@ -252,6 +252,11 @@ def stg_data(stack: int) -> NoReturn:
             # if team_stack[stack].index(team) == 2 and StageTeamShotData.allowed_season_segments.index(season) == 1:
             #     team_instance.testing()
 
+# Run the class for just one team/season segment
+def stg_one(team_name: str, season: str) -> NoReturn:
+    StageTeamShotData(team=team_name, season_segment=season).stage_shots()
+
+
 
 # Retrieve updates for each team, when each team was last updated
 # Ordered by last_updated ASC (earliest update first)
