@@ -22,8 +22,8 @@ Loads 3 teams at a time with stg_data() function call. Can put in a for loop wit
 add time.sleep(10) to avoid overloading API
 
 Team Stacks:
-(1: ATL, BOS, BKN)   (2: CHA, CHI, CLE)   (3: DAL, DEN, DET)   (4: GSW, HOU, IND)   (5: LAC, LAL, MEM)31/5 
-(6: MIA, MIL, MIN)   (7: NOP, NYK, OKC)   (8: ORL, PHI, PHX)   (9: POR, SAC, SAS)   (10: TOR, UTA, WAS)
+(1: ATL, BOS, BKN)   (2: CHA, CHI, CLE)1/6   (3: DAL, DEN, DET)   (4: GSW, HOU, IND)   (5: LAC, LAL, MEM)31/5 
+(6: MIA, MIL, MIN)1/6   (7: NOP, NYK, OKC)   (8: ORL, PHI, PHX)   (9: POR, SAC, SAS)   (10: TOR, UTA, WAS)1/6
 '''
 # NOT WORKING PROPERLY
 # Option 1: Continuous
@@ -34,4 +34,8 @@ Team Stacks:
 # DatabaseControl.connection.close()
 
 # Option 2: Individual call (3 at a time)
-staging_data.stg_data(5)
+staging_data.stg_data(10)
+
+# Get last update for teams
+staging_data.get_updates()
+

@@ -1,0 +1,20 @@
+31/5
+	* Created execution layer for staging_data.py in main.py
+	* Restructured DatabaseControl. Cursors are now re-initialised in each instance and method
+1/6
+	* Created db transaction in stage_shots() to group shot insert and time update insert, using context manager.
+        - Simply just a commit() and rollback()
+	* Restructured DatabaseControl again with a class method that returns connection object and another class method that sets class variable 'db_name'
+		- Now the child class will recreate a connection each time the instance method is called
+        - Changed how each instance method creates connections and cursors (context manager)
+	* Added global function staging_data.get_updates() to retrieve latest updates from teams.
+    * Added .gitignore file
+    * Updated stg_shots with: CHA, CHI, CLE, LAC, LAL, MEM, MIA, MIL, MIN, TOR, UTA, WAS
+        - 83,653 rows (shots)
+
+
+
+
+TO DO:
+* Insert rest of teams into database
+

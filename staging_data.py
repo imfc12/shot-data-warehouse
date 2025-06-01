@@ -80,12 +80,11 @@ class StageTeamShotData(ClutchTime, Month, DatabaseControl):
         return self._month_setting
     
     @month_setting.setter
-    def month_setting(self, new_month: str) -> None:
+    def month_setting(self, new_month: str) -> NoReturn:
         if new_month in self.__class__.allowed_months:
             self._month_setting = self.__class__.months[new_month]
         else:
             raise ValueError(f'Invalid Month. Must be one of either: {self.__class__.allowed_months}')
-
 
     # Date format received from API is string of 'yyyymmdd', convert to string representation of datetime object 'yyyy-mm-dd'
     @staticmethod
@@ -120,7 +119,7 @@ class StageTeamShotData(ClutchTime, Month, DatabaseControl):
         # Get data in dictionary form
         raw_shots = raw.shot_chart_detail.get_dict()
         # Retrieve headers from the data set
-        headers = raw_shots['headers']
+        headers: list[str] = raw_shots['headers']
         # lowercase each header
         new_headers = [hdr.lower() for hdr in headers]
         # Retrieve result sets from data set
@@ -151,29 +150,27 @@ class StageTeamShotData(ClutchTime, Month, DatabaseControl):
     # Returns dict with team_id, list of player id's, list of player name
     # Can use this function externally for debugging etc.
     def get_team(self) -> dict[str, Union[int, list]]:
-        # Dictionary cursor to return table in dictionary format (team_abbrev, player_id, team_id, player_name), for stored procedure 'TeamPlayers' in get_team()
-        cursor_dict = self.__class__.connection.cursor(dictionary=True)
-        # Call stored procedure to receive all players in the given team
-        cursor_dict.callproc(procname='TeamPlayers', args=[self.team])
-        # Empty dict to include team's id, list of each player's id and list of each player's name (debugging)
-        team = {}
-        # Retrieve stored procedure results and loop over each row (player)
-        for result in cursor_dict.stored_results():
-            players = result.fetchall()
-            for num, player in enumerate(players, start=1):
-                # Retrieve the team's id once only, by any player (Whoever is first)
-                if num == 1:
-                    team['team_id'] = player['team_id']
-                    # And create the structure for the id's and player names
-                    team['player_ids'] = []
-                    team['player_names'] = [] # Player id's useful for debugging
-                # Append each player's id and name to respective 'team{}' element
-                team['player_ids'].append(player['player_id'])
-                team['player_names'].append(player['player_name'])
-                # TEST debug
-                # print(f'Team: {player['team_abbrev']} - P_ID: {player['player_id']} - T_ID: {player['team_id']} - Name: {player['player_name']}')
-        cursor_dict.close()
-        return team
+        with DatabaseControl.get_connection() as conn:
+            # Dictionary cursor to return table in dictionary format (team_abbrev, player_id, team_id, player_name), for stored procedure 'TeamPlayers' in get_team()
+            with conn.cursor(dictionary=True) as c:
+                # Call stored procedure to receive all players in the given team
+                c.callproc(procname='TeamPlayers', args=[self.team])
+                # Empty dict to include team's id, list of each player's id and list of each player's name (debugging)
+                team = {}
+                # Retrieve stored procedure results and loop over each row (player)
+                for result in c.stored_results():
+                    players = result.fetchall()
+                    for num, player in enumerate(players, start=1):
+                        # Retrieve the team's id once only, by any player (Whoever is first)
+                        if num == 1:
+                            team['team_id'] = player['team_id']
+                            # And create the structure for the id's and player names
+                            team['player_ids'] = []
+                            team['player_names'] = [] # Player id's useful for debugging
+                        # Append each player's id and name to respective 'team{}' element
+                        team['player_ids'].append(player['player_id'])
+                        team['player_names'].append(player['player_name'])
+                return team
 
     # Returns list of dictionaries where values are strings or integers
     # Can use this function externally for debugging etc.
@@ -194,45 +191,47 @@ class StageTeamShotData(ClutchTime, Month, DatabaseControl):
         return team_shots
 
     def stage_shots(self) -> NoReturn:
-        cursor = self.__class__.connection.cursor()
         if self.team is None or self.season_segment is None:
             return f'Invalid values in team:({self.team}) or season_segment({self.season_segment})'
         current_team_shots = self.team_shots()
         # Insert into database
-        insert_player_shots_query = """
-                                    INSERT INTO stg_shots (game_id, game_event_id, player_id, player_name, team_id, team_name, team_abbrev, period, minutes_remaining, seconds_remaining, 
+        insert_player_shots_query = """ INSERT INTO stg_shots (game_id, game_event_id, player_id, player_name, team_id, team_name, team_abbrev, period, minutes_remaining, seconds_remaining, 
                                     event_type, action_type, shot_type, shot_zone_basic, shot_zone_area, shot_zone_range, shot_distance, loc_x, loc_y, shot_made_flag, game_date, htm, vtm, matchup, season_segment) 
                                     VALUES (%(game_id)s, %(game_event_id)s, %(player_id)s, %(player_name)s, %(team_id)s, %(team_name)s, %(team_abbrev)s, %(period)s, %(minutes_remaining)s, %(seconds_remaining)s, 
                                     %(event_type)s, %(action_type)s, %(shot_type)s, %(shot_zone_basic)s, %(shot_zone_area)s, %(shot_zone_range)s, %(shot_distance)s, %(loc_x)s, %(loc_y)s, %(shot_made_flag)s, 
                                     %(game_date)s, %(htm)s, %(vtm)s, %(matchup)s, %(season_segment)s)
                                     """
-        print('Inserting player shots...')
-        cursor.executemany(insert_player_shots_query, current_team_shots)
-        self.__class__.connection.commit()
-        # Insert into ref_teams.last_updated with timestamp
-        # Get current time to insert into ref_teams.team to show latest update
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         update_timestamp_query = "UPDATE ref_teams SET last_updated = %s WHERE team_abbrev = %s"
-        cursor.execute(update_timestamp_query, (timestamp, self.team))
-
-        self.__class__.connection.commit()
-        cursor.close()
+        
+        try:
+            with DatabaseControl.get_connection() as conn:
+                with conn.cursor() as c:
+                    try:
+                        # No need to manually start transaction. Transaction starts automatically and autocommit = 0 (False) by default. Will cause error: 'Transaction already in progress'
+                        print('Inserting player shots...')
+                        c.executemany(insert_player_shots_query, current_team_shots)
+                        # Get current time to insert into ref_teams.team to show latest update
+                        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                        c.execute(update_timestamp_query, (timestamp, self.team))
+                        conn.commit()
+                    except Exception as e:
+                        conn.rollback()
+                        print('Transaction Failed: ', e)
+        except Exception as e:
+            print('Connection Failed: ', e)
 
     
     # No tuple return value, just printing
     def testing(self) -> tuple:
-        cursor = self.__class__.connection.cursor()
-        # Test
-        # Need to remove the close connection from 'stage_shots()' to run this, so it keeps the same connection, unless we are committing as well
-        cursor.execute("SELECT * FROM stg_shots")
-        players = cursor.fetchall()
-        for player in players:
-            print(player)
-
-        cursor.close()
+        with DatabaseControl.get_connection() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT * FROM stg_shots")
+                players = c.fetchall()
+                for player in players:
+                    print(player)
 
 # Function to run the StageTeamShotData instance
-def stg_data(stack: int, database_on: bool = False) -> NoReturn:
+def stg_data(stack: int) -> NoReturn:
     team_stack = {1: ['ATL', 'BOS', 'BKN'], 2: ['CHA', 'CHI', 'CLE'], 3: ['DAL', 'DEN', 'DET'],
                 4: ['GSW', 'HOU', 'IND'], 5: ['LAC', 'LAL', 'MEM'], 6: ['MIA', 'MIL', 'MIN'],
                 7: ['NOP', 'NYK', 'OKC'], 8: ['ORL', 'PHI', 'PHX'], 9: ['POR', 'SAC', 'SAS'],
@@ -252,10 +251,16 @@ def stg_data(stack: int, database_on: bool = False) -> NoReturn:
             # Perform a check to see if we are at the end of the player/season iteration, if so, execute testing query.
             # if team_stack[stack].index(team) == 2 and StageTeamShotData.allowed_season_segments.index(season) == 1:
             #     team_instance.testing()
-    
-    # If we are running more than one stack at a time via a loop, we want to keep the database on
-    if not database_on:
-        DatabaseControl.connection.close()
 
 
-
+# Retrieve updates for each team, when each team was last updated
+# Ordered by last_updated ASC (earliest update first)
+def get_updates():
+    with DatabaseControl.get_connection() as conn:
+        with conn.cursor() as c:
+            c.execute("""SELECT team_abbrev, last_updated 
+                         FROM ref_teams
+                         ORDER BY last_updated""")
+            team_updates = c.fetchall()
+            for team in team_updates:
+                print(team)

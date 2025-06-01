@@ -29,18 +29,23 @@ class ClutchTime:
     last_10_seconds = "Last 10 Seconds"
     none_clutch = ""
 
+"""This now contains a class method that returns the database connection.
+It is a class method because i want to hold 'db_name' in there which can be changed
+with another class method 'change_database'.
+"""
 class DatabaseControl:
-    print('Starting up database')
-    pw = os.getenv('mysql_pw')
-    # Connect to db
-    connection = connector.connect(host='localhost', user='root',
-                                   password=pw, port=3306, database='shot_eff_whse')
-    # Create cursor and start the database, close the cursor immediately as a new one will be created
-    cursor = connection.cursor()
-    # Set default database
-    cursor.execute('USE shot_eff_whse')
-    cursor.close()
-    # Option to set new database name
+    db_name = 'shot_eff_whse'
     @classmethod
-    def set_database(cls, db_name):
-        cls.cursor.execute(f'USE {db_name}')
+    def get_connection(cls):
+        pw = os.getenv('mysql_pw')
+        connection = connector.connect(host='localhost', user='root',
+                                       password=pw, port=3306, 
+                                       database=cls.db_name)
+        return connection
+
+    @classmethod
+    def change_database(cls, new_db_name: str):
+            if isinstance(new_db_name, str):
+                cls.db_name = new_db_name
+            else:
+                raise ValueError(f'Invalid database name')
