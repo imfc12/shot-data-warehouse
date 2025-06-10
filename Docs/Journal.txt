@@ -13,7 +13,25 @@
         - Stacks: 1,2,3,4,5,6,7,8,9,10
     * Created global function staging_data.stg_one to run one team/segment at a time
 
+5/6
+    * Mapped out which fields from stg_shots go into dim and fact columns into 'column_mapping.md'
+
+8/6
+    * Testing INSERT queries from staging to star schema.
+    * Found issue where i was inserting duplicate games in dim_game
+
+
 
 TO DO:
-* Run process of stg_shots -> facts/dimensions tables
+Solve issue where of inserting duplicate games in dim_game
+- Where to remove distinct from? Where to have DISTINCT?
 
+
+Stored procedure to load data from stg to fact/dim
+* Run process of stg_shots -> facts/dimensions tables
+* Surrogate key of the fact table?
+
+LONG TERM:
+- Create ability to search one team at a time
+    - Scan for finished games and look those teams up
+- Add game log ability to search the game that the player has played in
