@@ -1,7 +1,7 @@
 import mysql.connector as connector
 from dotenv import load_dotenv
 import os
-
+# New comment
 # Load environment for mysql password
 load_dotenv()
 
