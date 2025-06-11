@@ -18,11 +18,11 @@ CREATE SCHEMA IF NOT EXISTS `shot_eff_whse` DEFAULT CHARACTER SET utf8 ;
 USE `shot_eff_whse` ;
 
 -- -----------------------------------------------------
--- Table `shot_eff_whse`.`dim_game`
+-- Table `shot_eff_whse`.`dim_games`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `shot_eff_whse`.`dim_game` (
+CREATE TABLE IF NOT EXISTS `shot_eff_whse`.`dim_games` (
   `game_key` INT NOT NULL AUTO_INCREMENT,
-  `matchup` VARCHAR(10) NULL,
+  `matchup` VARCHAR(15) NULL,
   `game_id` INT NULL,
   PRIMARY KEY (`game_key`))
 ENGINE = InnoDB;
@@ -64,13 +64,14 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `shot_eff_whse`.`dim_time` (
   `time_key` INT NOT NULL AUTO_INCREMENT,
+  `time_id` VARCHAR(20) NULL,
   `season_segment` ENUM("Playoffs", "Regular Season") NULL,
   `game_event_id` INT NULL,
   `game_id` INT NULL,
   `game_date` DATE NULL,
   `period` TINYINT NULL,
-  `min_left` TINYINT NULL,
-  `sec_left` TINYINT NULL,
+  `minutes_remaining` TINYINT NULL,
+  `seconds_remaining` TINYINT NULL,
   PRIMARY KEY (`time_key`))
 ENGINE = InnoDB;
 
@@ -80,6 +81,7 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `shot_eff_whse`.`dim_shots` (
   `shot_key` INT NOT NULL AUTO_INCREMENT,
+  `shot_id` VARCHAR(20) NULL,
   `action_type` VARCHAR(45) NULL,
   `shot_type` VARCHAR(45) NULL,
   `shot_zone_basic` VARCHAR(45) NULL,
@@ -113,7 +115,7 @@ CREATE TABLE IF NOT EXISTS `shot_eff_whse`.`fact_shots` (
   INDEX `time_key_fk_idx` USING BTREE (`time_key`) VISIBLE,
   CONSTRAINT `game_key_fk`
     FOREIGN KEY (`game_key`)
-    REFERENCES `shot_eff_whse`.`dim_game` (`game_key`)
+    REFERENCES `shot_eff_whse`.`dim_games` (`game_key`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `team_key_fk`
@@ -137,8 +139,3 @@ CREATE TABLE IF NOT EXISTS `shot_eff_whse`.`fact_shots` (
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
-
-
-SET SQL_MODE=@OLD_SQL_MODE;
-SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;

@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS `shot_eff_whse`.`stg_shots` (
   `game_id` VARCHAR(12) NULL,
   `game_event_id` INT NULL,
   `player_id` INT NULL,
-  `player_name` VARCHAR(45) NULL,
+  `player_name` VARCHAR(45) CHARACTER SET 'DEFAULT' NULL,
   `team_id` INT NULL,
   `team_name` VARCHAR(45) NULL,
   `team_abbrev` CHAR(3) NULL,
@@ -36,7 +36,9 @@ CREATE TABLE IF NOT EXISTS `shot_eff_whse`.`stg_shots` (
   `htm` CHAR(3) NULL,
   `vtm` CHAR(3) NULL,
   `matchup` VARCHAR(45) NULL,
-  `season_segment` VARCHAR(20) NULL)
+  `season_segment` VARCHAR(20) NULL,
+  `shot_id` INT NULL,
+  `time_id` INT NULL)
 ENGINE = InnoDB;
 
 

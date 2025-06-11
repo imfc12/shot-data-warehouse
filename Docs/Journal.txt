@@ -21,15 +21,24 @@
     * Found issue where i was inserting duplicate games in dim_game
 
 
+11/6
+    * Altered structure of star schema and staging table to include shot_id, time_id
+
 
 TO DO:
-Solve issue where of inserting duplicate games in dim_game
-- Where to remove distinct from? Where to have DISTINCT?
+    * Run New SQL to create new tables
+    * Need to restructure ETL process to include shot_id & time_id in dim_shots & dim_time respectively
+        dim_shots and dim_time were not being joined in SQL
 
+
+
+
+# With the restructure
+- Create functionality to add last_n_games?
 
 Stored procedure to load data from stg to fact/dim
 * Run process of stg_shots -> facts/dimensions tables
-* Surrogate key of the fact table?
+
 
 LONG TERM:
 - Create ability to search one team at a time

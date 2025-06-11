@@ -98,7 +98,7 @@ class StageTeamShotData(ClutchTime, Month, DatabaseControl):
         # If the player's team is the home team...
         if h_team == player_team_abbrev:
             matchup = f'{h_team} vs. {v_team}'
-        # Redundant elif but wanted to be clear about the logic. Could also just use 'else'
+        # Redundant elif but wanted to be clear about the logic. Could just use 'else'
         elif v_team == player_team_abbrev:
             matchup = f'{v_team} @ {h_team}'
         return player_team_abbrev, matchup
