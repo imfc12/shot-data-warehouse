@@ -64,7 +64,7 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `shot_eff_whse`.`dim_time` (
   `time_key` INT NOT NULL AUTO_INCREMENT,
-  `time_id` VARCHAR(20) NULL,
+  `time_id` VARCHAR(25) NULL,
   `season_segment` ENUM("Playoffs", "Regular Season") NULL,
   `game_event_id` INT NULL,
   `game_id` INT NULL,
@@ -81,7 +81,7 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `shot_eff_whse`.`dim_shots` (
   `shot_key` INT NOT NULL AUTO_INCREMENT,
-  `shot_id` VARCHAR(20) NULL,
+  `shot_id` VARCHAR(25) NULL,
   `action_type` VARCHAR(45) NULL,
   `shot_type` VARCHAR(45) NULL,
   `shot_zone_basic` VARCHAR(45) NULL,

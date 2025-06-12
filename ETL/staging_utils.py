@@ -30,7 +30,7 @@ class ClutchTime:
     none_clutch = ""
 
 """This now contains a class method that returns the database connection.
-It is a class method because i want to hold 'db_name' in there which can be changed
+It is a class method because i want to hold 'db_name' inside which can be changed
 with another class method 'change_database'.
 """
 class DatabaseControl:

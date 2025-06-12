@@ -1,7 +1,6 @@
-from staging_data import DatabaseControl
-import reference_data
-import staging_data
-import time
+from ETL.staging_data import DatabaseControl
+import ETL.reference_data as reference_data
+import ETL.staging_data as staging_data
 
 # Rename to run_all.py?
 
@@ -27,11 +26,14 @@ Team Stacks:
 '''
 
 # Call one stack at a time (3 teams in one stack)
-staging_data.stg_data(8)
+# staging_data.stg_data(8)
 
 # Get last update for teams
-staging_data.get_updates()
+# staging_data.get_updates()
 
 # One team / season at a time
-# staging_data.stg_one('IND', 'Playoffs')
+staging_data.stg_one('NYK', 'Regular Season')
+staging_data.stg_one('NYK', 'Playoffs')
+staging_data.stg_one('MIN', 'Regular Season')
+staging_data.stg_one('MIN', 'Playoffs')
 # Need Indiana Playoffs

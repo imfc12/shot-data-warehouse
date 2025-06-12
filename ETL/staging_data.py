@@ -1,5 +1,5 @@
 from nba_api.stats.endpoints.shotchartdetail import ShotChartDetail
-from staging_utils import Month, ClutchTime, DatabaseControl
+from ETL.staging_utils import Month, ClutchTime, DatabaseControl
 from typing import Union, NoReturn
 # from mysql.connector.connection import MySQLConnection
 # from mysql.connector.cursor import MySQLCursor, MySQLCursorDict
@@ -34,7 +34,7 @@ class StageTeamShotData(ClutchTime, Month, DatabaseControl):
         self._team = team if team in self.__class__.team_names else None
         # Check if season segment is correct
         self._season_segment = season_segment if season_segment in self.__class__.allowed_season_segments else None
-        # clutch_time_setting for testing purposes only
+        # clutch_time_setting. Use for testing purposes only
         self._clutch_time_setting = self.__class__.none_clutch
         # Month for testing purposes only
         self._month_setting: int = self.__class__.months['all months']
@@ -102,6 +102,11 @@ class StageTeamShotData(ClutchTime, Month, DatabaseControl):
         elif v_team == player_team_abbrev:
             matchup = f'{v_team} @ {h_team}'
         return player_team_abbrev, matchup
+    
+    # Function to generate custom id's for dim_shots and dim_time
+    def _get_ids(self, *ids):
+        # Concatenate all id values passed in
+        return ''.join(str(id) for id in ids)
 
     # Function to take in player in ShotChartDetail API
     # Returns list of dictionaries, each dictionary is individual player's shot data
@@ -129,19 +134,24 @@ class StageTeamShotData(ClutchTime, Month, DatabaseControl):
         for r in result_sets:
             # Map the headers and results into dict
             # Each 'r' is a different shot
-            current_dict = dict(zip(new_headers, r))
+            cur_player = dict(zip(new_headers, r))
             # Add team_abbrev, matchup from get_team_and_matchup() function
-            current_dict['team_abbrev'], current_dict['matchup'] = self._get_team_and_matchup(current_dict['team_name'], current_dict['htm'], current_dict['vtm'])
+            cur_player['team_abbrev'], cur_player['matchup'] = self._get_team_and_matchup(cur_player['team_name'], cur_player['htm'], cur_player['vtm'])
             # Change game date to formatted style
-            current_dict['game_date'] = self._get_date_format(current_dict['game_date'])
+            cur_player['game_date'] = self._get_date_format(cur_player['game_date'])
             # Add season segment 'Playoffs' or 'Regular Season'
-            current_dict['season_segment'] = self.season_segment
+            cur_player['season_segment'] = self.season_segment
+            # Insert shot_id
+            cur_player['shot_id'] = self._get_ids(cur_player['game_id'], cur_player['game_event_id'], cur_player['shot_made_flag'])
+            # Insert time_id
+            cur_player['time_id'] = self._get_ids(cur_player['game_id'], cur_player['game_event_id'], cur_player['period'], cur_player['minutes_remaining'], cur_player['seconds_remaining'])
+
             # Remove 'grid_type', 'shot_attempted_flag', unnecessary elements
-            current_dict.pop('grid_type', None)
-            current_dict.pop('shot_attempted_flag', None)
-            # Append the current_dict (r/shot) to the player's total shots in tuple format
-            # player_shots.append(tuple(current_dict.values()))
-            player_shots.append(current_dict)
+            cur_player.pop('grid_type', None)
+            cur_player.pop('shot_attempted_flag', None)
+            # Append the cur_player (r/shot) to the player's total shots in tuple format
+            # player_shots.append(tuple(cur_player.values()))
+            player_shots.append(cur_player)
         # Return player_shots and use '.extend()' on the team's overall list 'team_shots'
         return player_shots
 
@@ -195,11 +205,11 @@ class StageTeamShotData(ClutchTime, Month, DatabaseControl):
             return f'Invalid values in team:({self.team}) or season_segment({self.season_segment})'
         current_team_shots = self.team_shots()
         # Insert into database
-        insert_player_shots_query = """ INSERT INTO stg_shots (game_id, game_event_id, player_id, player_name, team_id, team_name, team_abbrev, period, minutes_remaining, seconds_remaining, 
-                                    event_type, action_type, shot_type, shot_zone_basic, shot_zone_area, shot_zone_range, shot_distance, loc_x, loc_y, shot_made_flag, game_date, htm, vtm, matchup, season_segment) 
+        insert_player_shots_query = """ INSERT INTO stg_shots (game_id, game_event_id, player_id, player_name, team_id, team_name, team_abbrev, period, minutes_remaining, seconds_remaining, event_type, action_type, 
+                                        shot_type, shot_zone_basic, shot_zone_area, shot_zone_range, shot_distance, loc_x, loc_y, shot_made_flag, game_date, htm, vtm, matchup, season_segment, shot_id, time_id) 
                                     VALUES (%(game_id)s, %(game_event_id)s, %(player_id)s, %(player_name)s, %(team_id)s, %(team_name)s, %(team_abbrev)s, %(period)s, %(minutes_remaining)s, %(seconds_remaining)s, 
                                     %(event_type)s, %(action_type)s, %(shot_type)s, %(shot_zone_basic)s, %(shot_zone_area)s, %(shot_zone_range)s, %(shot_distance)s, %(loc_x)s, %(loc_y)s, %(shot_made_flag)s, 
-                                    %(game_date)s, %(htm)s, %(vtm)s, %(matchup)s, %(season_segment)s)
+                                    %(game_date)s, %(htm)s, %(vtm)s, %(matchup)s, %(season_segment)s, %(shot_id)s, %(time_id)s)
                                     """
         update_timestamp_query = "UPDATE ref_teams SET last_updated = %s WHERE team_abbrev = %s"
         

@@ -25,6 +25,11 @@
     * Altered structure of star schema and staging table to include shot_id, time_id
 
 
+12/6
+    * Deleted old database
+    * Added '_get_ids' to player_shots() to retrieve shot_id and time_id
+    * Ran 'reference_data()' to populate reference tables (teams & players)
+
 TO DO:
     * Run New SQL to create new tables
     * Need to restructure ETL process to include shot_id & time_id in dim_shots & dim_time respectively
@@ -42,5 +47,6 @@ Stored procedure to load data from stg to fact/dim
 
 LONG TERM:
 - Create ability to search one team at a time
-    - Scan for finished games and look those teams up
+    - Scan for finished games and look teams up
 - Add game log ability to search the game that the player has played in
+- Add season select ability? (2024-25, 2025-26 etc.)
