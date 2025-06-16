@@ -1,39 +1,12 @@
--- BACKUP
-
-SHOW DATABASES;
-
 USE shot_eff_whse;
 
-SHOW TABLES;
+DESCRIBE stg_shots;
+
+SET SQL_SAFE_UPDATES = 0;
 
 SELECT COUNT(*) FROM stg_shots;
 
-SELECT COUNT(DISTINCT game_id) FROM stg_shots;
-
-SELECT COUNT(DISTINCT matchup, game_id) FROM dim_game;
-SELECT * FROM dim_game WHERE game_id = 22400016;
-
-SELECT COUNT(DISTINCT(CONCAT(stg_shots.game_id, stg_shots.game_event_id))) FROM stg_shots;
-
--- Stored procedure used to retrieve all players from a given team
-DESCRIBE ref_teams;
-SET SQL_SAFE_UPDATES = 0;
-DELIMITER //
-CREATE PROCEDURE TeamPlayers(IN team_abbr CHAR(3))
-BEGIN
-	SELECT t.team_abbrev, p.player_id, p.team_id, p.player_name
-	FROM ref_teams AS t
-	JOIN ref_players AS p ON t.team_id = p.team_id
-	WHERE t.team_abbrev = team_abbr
-    ORDER BY p.player_name;
-END //
-DELIMITER ;
-
-CALL TeamPlayers('ATL');
-
-
-
--- TRANSACTION TO TEST INSERTING INTO STAR SCHEMA
+-- TRANSACTION TO TEST INSERT INTO STAR SCHEMA
 START TRANSACTION;
 -- ******* Add teams ******* --
 INSERT INTO dim_teams (team_id, team_name, team_abbrev)
@@ -42,7 +15,7 @@ FROM stg_shots
 WHERE team_id NOT IN (SELECT team_id FROM dim_teams);
 
 SELECT COUNT(*) FROM dim_teams;
--- ******* --
+-- ----------****---------- --
 
 -- ******* Add players ******* --
 INSERT INTO dim_players (player_id, player_name, team_id)
@@ -51,102 +24,158 @@ FROM stg_shots
 WHERE player_id NOT IN (SELECT player_id FROM dim_players);
 
 SELECT COUNT(*) FROM dim_players;
--- *******
+-- ----------****---------- --
+
+-- ******* Update Players ******* --
+UPDATE dim_players AS p
+JOIN (
+  SELECT DISTINCT player_id, team_id
+  FROM stg_shots
+) AS st
+  ON p.player_id = st.player_id
+SET p.team_id = st.team_id
+WHERE p.team_id <> st.team_id;
+-- ----------****---------- --
 
 -- ******* Add game ******* --
-INSERT INTO dim_game (matchup, game_id)
-SELECT DISTINCT matchup, game_id
+INSERT INTO dim_games (matchup, game_id, htm, vtm)
+SELECT DISTINCT matchup, game_id, htm, vtm
 FROM stg_shots
-WHERE CONCAT(matchup, game_id) NOT IN
-(SELECT CONCAT(matchup, game_id) FROM dim_game);
+WHERE game_id NOT IN
+(SELECT game_id FROM dim_games);
 
-SELECT COUNT(*) FROM dim_game;
--- *******
+SELECT COUNT(*) FROM dim_games;
+-- ----------****---------- --
 
 -- ******* Add shots ******* --
-INSERT INTO dim_shots (action_type, shot_type, shot_zone_basic, shot_zone_area, shot_zone_range, event_type, game_event_id, game_id)
-SELECT action_type, shot_type, shot_zone_basic, shot_zone_area, shot_zone_range, event_type, game_event_id, game_id
+INSERT INTO dim_shots (shot_id, action_type, shot_type, shot_zone_basic, shot_zone_area, shot_zone_range, event_type, game_event_id, game_id)
+SELECT DISTINCT shot_id, action_type, shot_type, shot_zone_basic, shot_zone_area, shot_zone_range, event_type, game_event_id, game_id
 FROM stg_shots
-WHERE CONCAT(game_id, game_event_id) NOT IN
-(SELECT CONCAT(game_id, game_event_id) FROM dim_game);
+WHERE shot_id NOT IN
+(SELECT shot_id FROM dim_shots);
 
 SELECT COUNT(*) FROM dim_shots;
--- ******* --
+-- ----------****---------- --
 
 -- ******* Add time ******* --
-INSERT INTO dim_time (season_segment, game_event_id, game_id, game_date, period, minutes_remaining, seconds_remaining)
-SELECT season_segment, game_event_id, game_id, game_date, period, minutes_remaining, seconds_remaining
+INSERT INTO dim_time (time_id, season_segment, game_event_id, game_id, game_date, period, minutes_remaining, seconds_remaining)
+SELECT time_id, season_segment, game_event_id, game_id, game_date, period, minutes_remaining, seconds_remaining
 FROM stg_shots
-WHERE CONCAT(game_id, game_event_id) NOT IN
-(SELECT CONCAT(game_id, game_event_id) FROM dim_time);
+WHERE time_id NOT IN
+(SELECT time_id FROM dim_time);
 
 SELECT COUNT(*) FROM dim_time;
--- ******* --
+-- ----------****---------- --
 
 -- ******* Add into fact_shots ******* --
 INSERT INTO fact_shots (time_key, shot_key, game_key, team_key, player_key, is_bucket, shot_distance, loc_x, loc_y)
-SELECT t.time_key, s.shot_key, g.game_key, tm.team_key, p.player_key,
+SELECT DISTINCT t.time_key, s.shot_key, g.game_key, tm.team_key, p.player_key,
 	   st.shot_made_flag, st.shot_distance, st.loc_x, st.loc_y
 FROM stg_shots AS st
 JOIN dim_players AS p ON st.player_id = p.player_id
 JOIN dim_teams AS tm ON st.team_id = tm.team_id
-JOIN dim_game AS g ON st.game_id = g.game_id
-JOIN dim_shots AS s ON st.game_id = s.game_id AND st.game_event_id = s.game_event_id
-JOIN dim_time AS t ON st.game_id = t.game_id AND st.game_event_id = t.game_event_id;
+JOIN dim_games AS g ON st.game_id = g.game_id AND st.matchup = g.matchup -- NEEDED TO JOIN ON BOTH!
+JOIN dim_shots AS s ON st.shot_id = s.shot_id
+JOIN dim_time AS t ON st.time_id = t.time_id
+WHERE tm.team_id = 1610612760;
+-- ----------****---------- --
 
-SELECT COUNT(*) FROM fact_shots;
-SELECT * FROM fact_shots;
+
+
+DELETE FROM dim_teams;
+DELETE FROM dim_players;
+DELETE FROM dim_games;
+DELETE FROM dim_time;
+DELETE FROM dim_shots;
+DELETE FROM fact_shots;
+
+SELECT COUNT(*) FROM fact_shots; -- 28082 + 7597 = 35697
+SELECT COUNT(*) FROM stg_shots; 
+SELECT COUNT(*) FROM stg_shots WHERE team_abbrev = 'OKC'; 
+SELECT COUNT(*) FROM stg_shots WHERE season_segment = 'Regular Season'; 
+SELECT DISTINCT team_abbrev FROM stg_shots;
+SELECT team_abbrev FROM dim_teams;
+
+-- With NYK & MIN (Reg & P-O) 17245
+-- NEW with GSW Added 23557 
+-- GSW Shows 5705 (Reg only) when added to NYK & MIN
+
+-- REAL RETURN
+-- GSW 6141
+-- CHI 6752
+-- PHX 6798
+-- DEN 7360
+-- OKC 7597
+
+SELECT COUNT(*) FROM fact_shots; -- 13924
+SELECT COUNT(*) FROM stg_shots;
+SELECT * FROM dim_games;
 -- ******* --
-
 ROLLBACK;
+COMMIT;
 
-SELECT t.time_key, s.shot_key, g.game_key, tm.team_key, p.player_key, g.matchup, g.game_id, t.game_date,
-	   st.shot_made_flag, st.shot_distance, st.loc_x, st.loc_y
-FROM stg_shots AS st
-JOIN dim_players AS p ON st.player_id = p.player_id
-JOIN dim_teams AS tm ON st.team_id = tm.team_id
-JOIN dim_game AS g ON st.game_id = g.game_id
-JOIN dim_shots AS s ON st.game_id = s.game_id AND st.game_event_id = s.game_event_id
-JOIN dim_time AS t ON st.game_id = t.game_id AND st.game_event_id = t.game_event_id
-WHERE t.time_key = 262141 AND s.shot_key = 786421;
 
-SELECT t.time_key, s.shot_key, COUNT(*) as cnt
-FROM stg_shots AS st
-JOIN dim_players AS p ON st.player_id = p.player_id
-JOIN dim_teams AS tm ON st.team_id = tm.team_id
-JOIN dim_game AS g ON st.game_id = g.game_id
-JOIN dim_shots AS s ON st.game_id = s.game_id AND st.game_event_id = s.game_event_id
-JOIN dim_time AS t ON st.game_id = t.game_id AND st.game_event_id = t.game_event_id
-GROUP BY t.time_key, s.shot_key
-HAVING cnt > 1;
+
+SELECT p.player_name, fs.is_bucket, fs.shot_distance, s.shot_zone_basic, g.matchup,
+	   t.game_date, t.period, t.minutes_remaining, t.seconds_remaining
+FROM fact_shots AS fs
+JOIN dim_players AS p ON fs.player_key = p.player_key
+JOIN dim_shots AS s ON fs.shot_key = s.shot_key
+JOIN dim_games AS g ON fs.game_key = g.game_key
+JOIN dim_time AS t ON fs.time_key = t.time_key
+WHERE fs.is_bucket = 1
+AND t.seconds_remaining < 5
+ORDER BY shot_distance DESC LIMIT 50;
+
+
+
+
 
 SHOW VARIABLES LIKE '%timeout';
-SET GLOBAL connect_timeout = 30;
+SET GLOBAL connect_timeout = 60;
 
 
+SELECT fs.*, p.player_name, s.shot_id, g.matchup, g.game_id
+FROM fact_shots AS fs
+JOIN dim_players AS p ON fs.player_key = p.player_key
+JOIN dim_games AS g ON fs.game_key = g.game_key
+JOIN dim_shots AS s ON fs.shot_key = s.shot_key
+WHERE s.shot_id IN ('00224003671701','00224003671900','00224003672490','00224003675191','00224003675320','00224003675370','00224003675470','00224003675560','00224003676091','00224005781261','00224005781391','00224005781501','00224005781521','00224005781561','00224005781590','00224005781681','00224005781710','00224005781771','00224005784100','002240036780','0022400367161','0022400367241','0022400367560','0022400367611','00224003671100','00224003672621','00224003673010','00224003673210','00224003673400','00224003673740','00224003673970','00224003674011','00224003674420','0022400578140','0022400578211','0022400578271','0022400578351','0022400578391','0022400578480','0022400578540','0022400578801','0022400578920','00224005781370','00224005782170','00224005782240','00224005782460','00224005782801','00224005782920','00224005783030','00224005783541','00224005783630','00224005784631','00224005784771','00224005784990','00224005785320','00224005785520','00224005782000','00224005782211','00224005782400','00224005782631','00224005782840','00224005783110','00224005783730','00224005784370','00224005784671','00224005784880','00224005785040','00224005785450','0022400367321','0022400367860','00224003671721','00224003671811','00224003672301','00224003672360','00224003672401','00224003672651','00224003673661','00224003673781','00224003674541','00224003675091','0022400367361','0022400367400','0022400367480','0022400367701','00224003671201','00224003671641','00224003671761','00224003671940','00224003672161','00224003673350','00224003673380','00224003673431','00224003673701','00224003674051','00224003674121','00224003674160','00224003674341','00224003674761','0022400578301','0022400578330','0022400578700','00224005781960','00224005782121','00224005782281','00224005782380','00224005782661','00224005783231','00224005783280','00224005783400','00224005783510','00224005784050','00224005783710','00224005784140','00224005785070','00224005785411','00224003671080','00224003671431','00224003672020','00224003672041','00224003672260','00224003672691','00224003672870','00224003674640','00224003674881','00224003675030','00224003675410','00224003675531','00224003675971','0022400578850','00224005781731','00224005784120','00224005784821','00224005785810','00224005785910','0022400367121','00224003671471','00224003671590','00224003671620','00224003672140','00224003672931','00224003673100','00224003673590','0022400578680','0022400578900','00224005782341','00224005782480','00224005782581','00224005783321','00224005783921','00224005783950','00224005785181','00224005785490','00224003675600','00224003675660','0022400367451','0022400367520','0022400367840','00224003671000','00224003672971','00224003673461','00224003674081','00224003675431','00224003675491','0022400578991','00224005781060','00224005781220','00224005782191','00224005783200','00224005783820','00224005783670','00224005784311','00224005784350','00224005784590','00224003676150','0022400367340','00224003671040','00224003671121','00224003671220','00224003672180','00224003672600','00224003672911','00224003673231','00224003673421','00224003673731','00224003673800','00224003673930','00224003674071','00224003674520','00224003674611','00224003674860','002240057870','0022400578160','0022400578190','0022400578280','0022400578370','0022400578440','00224005781091','00224005781430','00224005782201','00224005782231','00224005782501','00224005782621','00224005782640','00224005782881','00224005783151','00224005783260','00224005783341','00224005783531','00224005784841','00224005785061','00224005785511','00224003671060','00224003671711','00224003672280','00224003674361','00224003674400','00224003674971','00224003675581','00224003675920','00224003675951','0022400367141','0022400367181','0022400367220','0022400367681','00224003671780','00224003671990','00224003672950','00224003674100','0022400578121','0022400578230','00224005781660','00224005782161','00224005782600','00224005783011','00224005783050','00224005783130','00224005783240','00224005783550','00224005784801','00224005785850','00224003675070','00224003675111','00224003675270','00224003675441','00224003675541','00224003675641','00224003676100','00224003676141','00224005783070','00224005783650','002240036771','0022400367101','0022400367300','0022400367380','0022400367421','0022400367471','0022400367500','0022400367591','00224003672120','00224003672320','00224003672631','00224003672710','00224003672990','00224003673081','00224003673440','00224003673680','00224003673991','0022400578880','00224005782020','00224005782820','00224005783490','00224005783751','00224005785581','00224003675010','00224003675511','00224003675730','00224003676241','0022400367261','00224003671880','00224003672380','00224003673630','00224003673760','002240057891','0022400578261','0022400578321','0022400578521','0022400578720','00224005781900','00224005782261','00224005783300','00224005784250','0022400367720','0022400367971','00224003671180','00224003672830','00224003673060','00224003674720','00224003674810','0022400578661','0022400578820','00224005781051','00224005781401','00224005781740','00224005781981','00224005782131','00224005782441','00224005784081','00224005784290','00224005784331','00224003671321','00224003672511','00224003672861','00224003674141','00224003674551','00224005781200','00224005783690','00224005784551','00224005785301','00224005785540','00224005785830','00224003671920','00224003674780','00224003675300','00224003675391','00224003675851','00224003675880','00224003675980','00224005781020','00224005781241','00224005781511','00224005781571','00224005785801','00224005785890','00224003673561','0022400578401','0022400578461','00224005781180','00224005781451','00224005784221','00224005785011','00224003675351','00224003676070')
+ORDER BY shot_key
+;
 
+SELECT * FROM dim_teams;
 
+SELECT tm.team_abbrev, COUNT(*)
+FROM fact_shots AS fs
+JOIN dim_teams AS tm ON fs.team_key = tm.team_key
+JOIN dim_time AS t ON fs.time_key = t.time_key
+WHERE t.season_segment = 'Regular Season'
+AND tm.team_abbrev = 'CHI'
+GROUP BY tm.team_abbrev;
 
+SELECT t.team_abbrev, p.player_name, p.player_id
+FROM ref_teams AS t
+JOIN ref_players AS p ON t.team_id = p.team_id
+WHERE t.team_abbrev = 'PHX';
 
+SELECT * FROM ref_teams;
 
-
-
-
-
-
-
-
--- OTHER
-SELECT DISTINCT matchup, game_id, game_date
+SELECT COUNT(*) 
 FROM stg_shots 
-WHERE matchup = 'BOS vs. NYK'
-OR matchup = 'NYK vs. BOS'
-OR matchup = 'NYK @ BOS'
-OR matchup = 'BOS @ NYK'
-ORDER BY game_date, game_id;
+WHERE season_segment = 'Regular Season'
+AND team_abbrev = 'PHX'; -- 1026 GSW p-o shots
 
 
-SELECT COUNT(DISTINCT matchup, game_id, game_date)
-FROM stg_shots;
+SELECT team_abbrev, cnt,
+SUM(cnt) OVER () AS totals
+FROM (
+SELECT t.team_abbrev, COUNT(*) AS cnt
+FROM dim_teams AS t
+JOIN fact_shots AS fs ON t.team_key = fs.team_key
+GROUP BY t.team_abbrev) AS testing;
 
+SELECT COUNT(*) FROM ref_players;
+SELECT COUNT(*) FROM dim_players;
+SELECT * FROM dim_players;
 

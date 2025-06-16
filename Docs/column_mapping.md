@@ -55,6 +55,8 @@ team_abbrev -> team_abbrev
 (Generated) AUTO_INCREMENT -> game_key
 matchup -> matchup
 game_id -> game_id
+htm -> htm
+vtm -> vtm
 
 
 ###### stg_shots -> fact_shots

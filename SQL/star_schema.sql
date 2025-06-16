@@ -22,8 +22,10 @@ USE `shot_eff_whse` ;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `shot_eff_whse`.`dim_games` (
   `game_key` INT NOT NULL AUTO_INCREMENT,
-  `matchup` VARCHAR(15) NULL,
   `game_id` INT NULL,
+  `matchup` VARCHAR(15) NULL,
+  `htm` CHAR(3) NULL,
+  `vtm` CHAR(3) NULL,
   PRIMARY KEY (`game_key`))
 ENGINE = InnoDB;
 

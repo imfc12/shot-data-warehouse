@@ -30,19 +30,16 @@
     * Added '_get_ids' to player_shots() to retrieve shot_id and time_id
     * Ran 'reference_data()' to populate reference tables (teams & players)
 
+13/6
+    * Solved the issue of duplicate entries!!
+        - I was joining all dim tables on game id's only but since each game id has TWO matchup values ie. 'NYK vs GSW' & 'GSW @ NYK'
+            i needed to also add 'AND st.matchup = g.matchup'. Otherwise shots were being added to each (DISTINCT matchup-id value)
+    * Added htm and vtm to dim_games
+    * Added 'update players' logic to SQL to update players that may change teams
+
 TO DO:
-    * Run New SQL to create new tables
-    * Need to restructure ETL process to include shot_id & time_id in dim_shots & dim_time respectively
-        dim_shots and dim_time were not being joined in SQL
+    * Create Load process script to run SQL into dim and fact tables
 
-
-
-
-# With the restructure
-- Create functionality to add last_n_games?
-
-Stored procedure to load data from stg to fact/dim
-* Run process of stg_shots -> facts/dimensions tables
 
 
 LONG TERM:
@@ -50,3 +47,4 @@ LONG TERM:
     - Scan for finished games and look teams up
 - Add game log ability to search the game that the player has played in
 - Add season select ability? (2024-25, 2025-26 etc.)
+- Create functionality to add last_n_games?
