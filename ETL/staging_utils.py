@@ -1,7 +1,7 @@
 import mysql.connector as connector
 from dotenv import load_dotenv
 import os
-# New comment
+
 # Load environment for mysql password
 load_dotenv()
 
@@ -40,7 +40,8 @@ class DatabaseControl:
         pw = os.getenv('mysql_pw')
         connection = connector.connect(host='localhost', user='root',
                                        password=pw, port=3306, 
-                                       database=cls.db_name)
+                                       database=cls.db_name,
+                                       autocommit=False)
         return connection
 
     @classmethod

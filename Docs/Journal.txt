@@ -37,8 +37,13 @@
     * Added htm and vtm to dim_games
     * Added 'update players' logic to SQL to update players that may change teams
 
-TO DO:
-    * Create Load process script to run SQL into dim and fact tables
+
+1/7
+    * Created load_procedures.sql to hold all stored procedures to move data from staging to star schema
+    * Created orchestrate_load.py to orchestrate running of stored procedures
+
+Added stored procedures and orchestration to move data from staging to star schema
+
 
 
 

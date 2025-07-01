@@ -1,6 +1,6 @@
-from ETL.staging_data import DatabaseControl
 import ETL.reference_data as reference_data
 import ETL.staging_data as staging_data
+from ETL.orchestrate_load import LoadOrchestrator
 
 # Rename to run_all.py?
 
@@ -39,7 +39,11 @@ staging_data.stg_one('NYK', 'Playoffs')
 staging_data.stg_one('MIN', 'Regular Season')
 staging_data.stg_one('MIN', 'Playoffs')
 """
-staging_data.stg_one('OKC', 'Regular Season')
+# staging_data.stg_one('OKC', 'Regular Season')
 # staging_data.stg_one('DEN', 'Playoffs')
 
-# Need Indiana Playoffs
+
+
+rows = LoadOrchestrator().run_all()
+print(rows)
+
