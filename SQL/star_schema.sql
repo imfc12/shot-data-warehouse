@@ -22,7 +22,7 @@ USE `shot_eff_whse` ;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `shot_eff_whse`.`dim_games` (
   `game_key` INT NOT NULL AUTO_INCREMENT,
-  `game_id` INT NULL,
+  `game_id` INT NULL UNIQUE,
   `matchup` VARCHAR(15) NULL,
   `htm` CHAR(3) NULL,
   `vtm` CHAR(3) NULL,
@@ -66,7 +66,7 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `shot_eff_whse`.`dim_time` (
   `time_key` INT NOT NULL AUTO_INCREMENT,
-  `time_id` VARCHAR(25) NULL,
+  `time_id` VARCHAR(30) NULL,
   `season_segment` ENUM("Playoffs", "Regular Season") NULL,
   `game_event_id` INT NULL,
   `game_id` INT NULL,

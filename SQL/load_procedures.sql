@@ -83,7 +83,7 @@ DELIMITER //
 CREATE PROCEDURE DimTime(OUT rows_inserted INT)
 BEGIN
     INSERT INTO dim_time (time_id, season_segment, game_event_id, game_id, game_date, period, minutes_remaining, seconds_remaining)
-    SELECT time_id, season_segment, game_event_id, game_id, game_date, period, minutes_remaining, seconds_remaining
+    SELECT DISTINCT time_id, season_segment, game_event_id, game_id, game_date, period, minutes_remaining, seconds_remaining
     FROM stg_shots
     WHERE time_id NOT IN
     (SELECT time_id FROM dim_time);

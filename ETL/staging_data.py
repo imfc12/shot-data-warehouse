@@ -91,16 +91,13 @@ class StageTeamShotData(ClutchTime, Month, DatabaseControl):
     def _get_date_format(date_str: str) -> str:
         return datetime.strptime(date_str, '%Y%m%d').strftime('%Y-%m-%d')
 
-    # Get team abbreviation of player as it's not received from API, also create matchup str for the game eg 'CHI vs. PHI'/ 'HOU @ MIN'
+    # Get team abbreviation of player as it's not received from API, also create unique matchup
     def _get_team_and_matchup(self, team: str, h_team: str, v_team: str) -> tuple[str, str]:
-        # Retrieve team abbreviation from the mapped dictionary
+        """New version where we return one unique matchup string for every unique game"""
+        # Still need this: Retrieve team abbreviation from the mapped dictionary
         player_team_abbrev = self.team_names_map[team]
-        # If the player's team is the home team...
-        if h_team == player_team_abbrev:
-            matchup = f'{h_team} vs. {v_team}'
-        # Redundant elif but wanted to be clear about the logic. Could just use 'else'
-        elif v_team == player_team_abbrev:
-            matchup = f'{v_team} @ {h_team}'
+        # Retrieve unique matchup
+        matchup = f'{h_team} vs {v_team}'
         return player_team_abbrev, matchup
     
     # Function to generate custom id's for dim_shots and dim_time
@@ -144,7 +141,7 @@ class StageTeamShotData(ClutchTime, Month, DatabaseControl):
             # Insert shot_id
             cur_player['shot_id'] = self._get_ids(cur_player['game_id'], cur_player['game_event_id'], cur_player['shot_made_flag'])
             # Insert time_id
-            cur_player['time_id'] = self._get_ids(cur_player['game_id'], cur_player['game_event_id'], cur_player['period'], cur_player['minutes_remaining'], cur_player['seconds_remaining'])
+            cur_player['time_id'] = self._get_ids(cur_player['game_id'], cur_player['game_event_id'], cur_player['period'], cur_player['minutes_remaining'], cur_player['seconds_remaining'], cur_player['game_event_id'])
 
             # Remove 'grid_type', 'shot_attempted_flag', unnecessary elements
             cur_player.pop('grid_type', None)

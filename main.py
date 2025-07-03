@@ -2,16 +2,14 @@ import ETL.reference_data as reference_data
 import ETL.staging_data as staging_data
 from ETL.orchestrate_load import LoadOrchestrator
 
-# Rename to run_all.py?
-
 '''
 REFERENCE DATA
 
 ref_data() adds teams and players in reference tables.
-Use 'first_insert=True' argument for first time data loading (affectes ref_players only)
+Use 'first_insert=True' argument for first time data loading (affects ref_players only)
 Other wise 'first_insert=False'
 '''
-# reference_data.ref_data(first_insert=True)
+# reference_data.ref_data(first_insert=False)
 
 
 '''
@@ -31,18 +29,9 @@ Team Stacks:
 # Get last update for teams
 # staging_data.get_updates()
 
-# One team / season at a time
-"""
-DONE
-staging_data.stg_one('NYK', 'Regular Season')
-staging_data.stg_one('NYK', 'Playoffs')
-staging_data.stg_one('MIN', 'Regular Season')
-staging_data.stg_one('MIN', 'Playoffs')
-"""
-# staging_data.stg_one('OKC', 'Regular Season')
-# staging_data.stg_one('DEN', 'Playoffs')
-
-
+# One team / season segment at a time
+# staging_data.stg_one('MIL', 'Regular Season')
+# staging_data.stg_one('MIL', 'Playoffs')
 
 rows = LoadOrchestrator().run_all()
 print(rows)

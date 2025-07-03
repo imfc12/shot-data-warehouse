@@ -42,14 +42,21 @@
     * Created load_procedures.sql to hold all stored procedures to move data from staging to star schema
     * Created orchestrate_load.py to orchestrate running of stored procedures
 
-Added stored procedures and orchestration to move data from staging to star schema
 
+2/7
+    * Changed 'matchup' string for teams to have one consistent perspective for both teams as 
+      this was causing shots to not be inserted in fact_shots due to double up. One id for two matchup strings
+      eg. 'BOS @ ATL' --- 'ATL vs BOS'
+    * Changed the dim_games JOIN ON to game_id only, removed matchup
 
+3/7
+    * Found that duplicate time_id's can be accidentally generated (rare occasions, 10 in 200k+).
+      Simply added game_event_id again to the end of the id to make the id unique 100% of the time
 
 
 LONG TERM:
-- Create ability to search one team at a time
-    - Scan for finished games and look teams up
+
+- Scan for finished daily games and retrieve those shots automatically
 - Add game log ability to search the game that the player has played in
-- Add season select ability? (2024-25, 2025-26 etc.)
-- Create functionality to add last_n_games?
+- Add season select ability (2024-25, 2025-26 etc.)
+- Create functionality to add last_n_games

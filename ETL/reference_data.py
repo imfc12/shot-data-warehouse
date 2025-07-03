@@ -202,12 +202,14 @@ def ref_data(first_insert: bool = False) -> None:
     )
     cursor = connection.cursor()
     cursor.execute("""USE shot_eff_whse""")
-    insert_teams(c=cursor)
+    
     # Indicate first ever insert of player data in ref_players. If so, we don't want to run update_players() unnecessarily
     # Default is False as update_players() will be run only after the first insert
     # First insert must take argument as True
     if first_insert:
         insert_players(c=cursor)
+        # If not first insert, we do not want to re-insert teams
+        insert_teams(c=cursor)
     else:        
         update_players(c=cursor)
 
