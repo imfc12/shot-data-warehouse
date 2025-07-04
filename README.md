@@ -74,7 +74,9 @@ git clone https://github.com/imfc12/shot-data-warehouse.git
 cd shot-data-warehouse
 pip install -r requirements.txt      # nba_api, mysql-connector-python, python-dotenv …
 
+#### Project Tree
 
+```
 shot-data-warehouse/
 ├── .gitignore
 ├── environment.yml
@@ -99,3 +101,4 @@ shot-data-warehouse/
     ├── retrieve_team_proc.sql
     ├── staging_table.sql
     └── star_schema.sql
+```
