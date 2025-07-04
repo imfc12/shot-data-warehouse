@@ -7,32 +7,30 @@ REFERENCE DATA
 
 ref_data() adds teams and players in reference tables.
 Use 'first_insert=True' argument for first time data loading (affects ref_players only)
-Other wise 'first_insert=False'
+Other wise 'first_insert=False' (default)
 '''
-# reference_data.ref_data(first_insert=False)
+reference_data.ref_data(first_insert=False)
 
 
 '''
 STAGING DATA
-
-Loads 3 teams at a time with stg_data() function call. Can put in a for loop with 10 numbers for continuation.
-add time.sleep(10) to avoid overloading API
+Loads 3 teams at a time with stg_data() function call.
 
 Team Stacks:
-(1: ATL, BOS, BKN)1/6   (2: CHA, CHI, CLE)1/6   (3: DAL, DEN, DET)1/6   (4: GSW, HOU, IND)1/6   (5: LAC, LAL, MEM)31/5 
-(6: MIA, MIL, MIN)1/6   (7: NOP, NYK, OKC)1/6   (8: ORL, PHI, PHX)   (9: POR, SAC, SAS)1/6   (10: TOR, UTA, WAS)1/6
+(1: ATL, BOS, BKN)   (2: CHA, CHI, CLE)   (3: DAL, DEN, DET)   (4: GSW, HOU, IND)   (5: LAC, LAL, MEM) 
+(6: MIA, MIL, MIN)   (7: NOP, NYK, OKC)   (8: ORL, PHI, PHX)   (9: POR, SAC, SAS)   (10: TOR, UTA, WAS)
 '''
-
 # Call one stack at a time (3 teams in one stack)
 # staging_data.stg_data(8)
 
-# Get last update for teams
-# staging_data.get_updates()
 
 # One team / season segment at a time
-# staging_data.stg_one('MIL', 'Regular Season')
-# staging_data.stg_one('MIL', 'Playoffs')
+staging_data.stg_one('MIL', 'Regular Season')
+staging_data.stg_one('MIL', 'Playoffs')
 
 rows = LoadOrchestrator().run_all()
 print(rows)
 
+
+# Get latest insert update for teams
+# staging_data.get_updates()

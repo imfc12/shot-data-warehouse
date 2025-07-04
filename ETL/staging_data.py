@@ -1,8 +1,6 @@
 from nba_api.stats.endpoints.shotchartdetail import ShotChartDetail
 from ETL.staging_utils import Month, ClutchTime, DatabaseControl
 from typing import Union, NoReturn
-# from mysql.connector.connection import MySQLConnection
-# from mysql.connector.cursor import MySQLCursor, MySQLCursorDict
 from datetime import datetime
 from tqdm import tqdm
 import time

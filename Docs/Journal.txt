@@ -54,9 +54,10 @@
       Simply added game_event_id again to the end of the id to make the id unique 100% of the time
 
 
-LONG TERM:
 
-- Scan for finished daily games and retrieve those shots automatically
-- Add game log ability to search the game that the player has played in
+Further features to be added:
+- Daily match scan: Scan for finished daily games and retrieve those shots automatically
+- Add game_log API call ability to search game that a player has played in
 - Add season select ability (2024-25, 2025-26 etc.)
 - Create functionality to add last_n_games
+- Include other metrics and API calls to give more context to shots
